@@ -1,26 +1,90 @@
 @import "tailwindcss";
 
+/*
+ * Brand tokens, derived from the cover art. Nothing outside this palette.
+ *
+ * Contrast, measured against the two base tones (WCAG AA needs 4.5:1 for body
+ * text, 3:1 for large text and UI):
+ *   cream on plum      15.0:1   body copy
+ *   gold on plum        8.2:1   eyebrows, wordmark
+ *   magenta on plum     5.2:1   links, CTAs
+ *   ink on magenta      5.6:1   filled button labels
+ *   olive on plum       3.7:1   FAILS body text - decoration and borders only,
+ *                               never text. This is why olive is "rare".
+ */
+@theme {
+  --color-ink: #151015;
+  --color-plum: #2a1220;
+  --color-plum-raised: #371a2b;
+  --color-plum-line: #4a2438;
+  --color-magenta: #ff3d8c;
+  --color-gold: #f2b233;
+  --color-cream: #f5e9d8;
+  --color-olive: #6b7a3f;
+
+  --font-sans: var(--font-grotesk), ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", sans-serif;
+  --font-display: var(--font-editorial), ui-serif, Georgia, "Times New Roman",
+    serif;
+  --font-wordmark: var(--font-condensed), var(--font-grotesk), sans-serif;
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  color-scheme: dark;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  /* Anchor links from /hosts must not land under the sticky header. */
+  scroll-padding-top: 5.5rem;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--color-ink);
+  color: var(--color-cream);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/*
+ * Focus. Visible on every interactive element, in a colour that clears 3:1
+ * against both base tones. Never removed.
+ */
+:focus-visible {
+  outline: 2px solid var(--color-gold);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+/*
+ * Motion is restrained by policy: short, small, and only on hover or focus.
+ * Nothing fades in on load, so nothing is invisible at first paint - there is
+ * no entrance animation anywhere in this codebase to disable.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Skip link: off-screen until focused. */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 100;
+}
+.skip-link:focus {
+  left: 1rem;
+  top: 1rem;
+}
+
+/* Preserves the line breaks hosts type into the plain-textarea description. */
+.prose-breaks {
+  white-space: pre-line;
 }
