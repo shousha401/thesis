@@ -903,16 +903,25 @@ Everything else checked out: title and description present, `og:image` 1200x630,
 102KB, `image/jpeg`, `twitter:card` = `summary_large_image`, and the tags at
 byte ~3,400 of an 83KB document, well inside any crawler's read limit.
 
-### The build now refuses a vercel.app URL that is not ours
+### The build warns about a vercel.app URL that is not ours - it does not throw
 
 A near-miss domain is more dangerous than an obviously wrong one, because it
-answers 200. `next.config.ts` throws when `NEXT_PUBLIC_SITE_URL` is a
+answers 200. `next.config.ts` warns when `NEXT_PUBLIC_SITE_URL` is a
 `.vercel.app` address that does not match `VERCEL_PROJECT_PRODUCTION_URL`.
 
-Custom domains are the entire point of the override, so only `.vercel.app`
-values are checked - there is nothing to compare a custom domain against.
-Verified all three cases: it fires on the mismatch, and stays quiet for both the
-correct vercel.app domain and a custom one.
+**The first version of this threw, and broke the deployment.** A Vercel project
+answers on several `.vercel.app` aliases - the generated production one, a
+project-and-team one, per-branch ones - and `VERCEL_PROJECT_PRODUCTION_URL` is
+only one of them, so comparing against it produces false positives. The commit
+that added the check failed to deploy while the one before it succeeded.
+
+A guard that can block every deployment is worse than the bug it guards against.
+It is now loud but never fatal. Verified: the mismatch warns and still builds,
+the correct domain and a bare local build are silent.
+
+The lesson: an assertion that stops a deploy has to be certain, and this one was
+based on an assumption about Vercel's domain naming that could not be checked
+from here.
 
 ### cover-og.jpg is now a baseline JPEG
 

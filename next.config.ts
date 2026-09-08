@@ -30,7 +30,7 @@ if (
 }
 
 /**
- * Catches a wrong NEXT_PUBLIC_SITE_URL before it ships.
+ * Warns about a NEXT_PUBLIC_SITE_URL that looks wrong.
  *
  * That variable is inlined at build time and becomes every absolute URL the
  * site emits - canonical links, og:url, og:image. A deployment once went out
@@ -38,8 +38,12 @@ if (
  * else: og:image resolved with a 200 but returned HTML, so WhatsApp fetched it,
  * found no image, and silently showed no preview card. Nothing looked broken.
  *
- * A custom domain is the whole point of the override, so only a *.vercel.app
- * value is checked - and on Vercel we know exactly which one is ours.
+ * This warns rather than throws, deliberately. A Vercel project answers on
+ * several vercel.app aliases (the generated production one, a project-and-team
+ * one, per-branch ones), and VERCEL_PROJECT_PRODUCTION_URL is only one of them.
+ * An earlier version of this check threw, and failed a deployment for a URL
+ * that was in fact reachable. Blocking every deploy is worse than the bug being
+ * guarded against, so this is loud but never fatal.
  */
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '');
 const vercelProductionUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL;
@@ -47,12 +51,19 @@ const vercelProductionUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL;
 if (siteUrl && vercelProductionUrl) {
   const host = siteUrl.replace(/^https?:\/\//, '');
   if (host.endsWith('.vercel.app') && host !== vercelProductionUrl) {
-    throw new Error(
-      `NEXT_PUBLIC_SITE_URL is set to "${siteUrl}", but this project's Vercel ` +
-        `domain is "${vercelProductionUrl}". A vercel.app address that is not ` +
-        'this project belongs to someone else, and every canonical URL and ' +
-        'social preview image would point at their site. Set it to ' +
-        `"https://${vercelProductionUrl}", or to your own custom domain.`,
+    console.warn(
+      [
+        '',
+        `  WARNING: NEXT_PUBLIC_SITE_URL is "${siteUrl}", but this project's`,
+        `  Vercel production domain is "${vercelProductionUrl}".`,
+        '',
+        '  If that is another alias of this same project, ignore this. If it is',
+        "  a different project's domain, every canonical URL and social preview",
+        '  image will point at their site - which can look like a working link',
+        '  while returning HTML instead of an image, and link previews vanish.',
+        `  Check https://${host}/brand/cover-og.jpg returns an image.`,
+        '',
+      ].join('\n'),
     );
   }
 }
