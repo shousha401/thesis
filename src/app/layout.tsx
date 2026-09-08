@@ -57,7 +57,16 @@ export const metadata: Metadata = {
     title: SITE_NAME,
     description: SITE_DESCRIPTION,
     url: SITE_URL,
-    images: [{ url: BRAND_OG, width: 1200, height: 630, alt: `${SITE_NAME} cover art` }],
+    images: [
+      {
+        url: BRAND_OG,
+        width: 1200,
+        height: 630,
+        // Stated explicitly: some link-preview fetchers will not guess.
+        type: 'image/jpeg',
+        alt: `${SITE_NAME} cover art`,
+      },
+    ],
   },
   twitter: {
     card: 'summary_large_image',

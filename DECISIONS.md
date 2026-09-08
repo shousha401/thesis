@@ -876,3 +876,50 @@ are back to 100. The lesson: audit every page type, not a representative one.
 | Clips | 95 | 100 | 100 | 100 |
 | Episodes | 96 | 100 | 100 | 100 |
 | Episode | 99 | 100 | 100 | 100 |
+
+---
+
+## WhatsApp link previews
+
+### The og:image pointed at a stranger's website
+
+WhatsApp showed no preview card for the deployed site. The deployed HTML had:
+
+    og:url    https://thesis.vercel.app
+    og:image  https://thesis.vercel.app/brand/cover-og.jpg
+
+but the site is at `thesis-ten-jet.vercel.app`. `thesis.vercel.app` is an
+unrelated Vercel project - it serves a site called "HR Management" - and like
+many single-page apps it answers *every* path with `200 OK` and an HTML
+document. So the image URL was not a dead link, which is why nothing looked
+broken: it returned 200, and returned `text/html`. WhatsApp fetched it, found no
+image, and dropped the card.
+
+The cause was `NEXT_PUBLIC_SITE_URL` having been set to a guessed address. It is
+inlined at build time, so correcting it in Vercel changes nothing until a
+redeploy - which the commit itself triggers.
+
+Everything else checked out: title and description present, `og:image` 1200x630,
+102KB, `image/jpeg`, `twitter:card` = `summary_large_image`, and the tags at
+byte ~3,400 of an 83KB document, well inside any crawler's read limit.
+
+### The build now refuses a vercel.app URL that is not ours
+
+A near-miss domain is more dangerous than an obviously wrong one, because it
+answers 200. `next.config.ts` throws when `NEXT_PUBLIC_SITE_URL` is a
+`.vercel.app` address that does not match `VERCEL_PROJECT_PRODUCTION_URL`.
+
+Custom domains are the entire point of the override, so only `.vercel.app`
+values are checked - there is nothing to compare a custom domain against.
+Verified all three cases: it fires on the mismatch, and stays quiet for both the
+correct vercel.app domain and a custom one.
+
+### cover-og.jpg is now a baseline JPEG
+
+It was progressive. WhatsApp's fetcher does not reliably decode progressive
+JPEGs and silently shows no card, so the one image that crawlers fetch raw is
+now baseline (107KB, 1200x630, still well under the 300KB ceiling). Everything
+else goes through next/image, which re-encodes, so this applies only to
+`cover-og.jpg`. `scripts/build-cover.py` keeps it that way.
+
+`og:image:type` is now declared too, rather than left for the fetcher to guess.

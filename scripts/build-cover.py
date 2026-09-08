@@ -84,7 +84,11 @@ def main() -> int:
     side = 630
     scaled = art.resize((side, side), Image.LANCZOS)
     og.paste(scaled, ((1200 - side) // 2, 0))
-    og.save(OUT / "cover-og.jpg", "JPEG", quality=88, optimize=True, progressive=True)
+    # Baseline, NOT progressive. WhatsApp's link-preview fetcher does not
+    # reliably decode progressive JPEGs and silently shows no card. Every other
+    # image here goes through next/image, which re-encodes; this one is fetched
+    # raw by crawlers, so it has to be the safe encoding.
+    og.save(OUT / "cover-og.jpg", "JPEG", quality=88, optimize=True, progressive=False)
 
     for name in ("cover.jpg", "cover-og.jpg"):
         path = OUT / name

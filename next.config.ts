@@ -29,6 +29,34 @@ if (
   );
 }
 
+/**
+ * Catches a wrong NEXT_PUBLIC_SITE_URL before it ships.
+ *
+ * That variable is inlined at build time and becomes every absolute URL the
+ * site emits - canonical links, og:url, og:image. A deployment once went out
+ * with it pointing at a similarly-named vercel.app domain owned by somebody
+ * else: og:image resolved with a 200 but returned HTML, so WhatsApp fetched it,
+ * found no image, and silently showed no preview card. Nothing looked broken.
+ *
+ * A custom domain is the whole point of the override, so only a *.vercel.app
+ * value is checked - and on Vercel we know exactly which one is ours.
+ */
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '');
+const vercelProductionUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL;
+
+if (siteUrl && vercelProductionUrl) {
+  const host = siteUrl.replace(/^https?:\/\//, '');
+  if (host.endsWith('.vercel.app') && host !== vercelProductionUrl) {
+    throw new Error(
+      `NEXT_PUBLIC_SITE_URL is set to "${siteUrl}", but this project's Vercel ` +
+        `domain is "${vercelProductionUrl}". A vercel.app address that is not ` +
+        'this project belongs to someone else, and every canonical URL and ' +
+        'social preview image would point at their site. Set it to ' +
+        `"https://${vercelProductionUrl}", or to your own custom domain.`,
+    );
+  }
+}
+
 const supabaseHost = process.env.NEXT_PUBLIC_SUPABASE_URL
   ? new URL(process.env.NEXT_PUBLIC_SUPABASE_URL).hostname
   : null;

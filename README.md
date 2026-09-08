@@ -223,6 +223,21 @@ resend button with a 60-second cooldown.
 5. Go back and update the Supabase redirect URLs (section 5c) with the real
    domain.
 
+### `NEXT_PUBLIC_SITE_URL` must be exactly right, and needs a redeploy
+
+It is inlined at build time and becomes every absolute URL the site emits:
+canonical links, `og:url`, and the social preview image. Two consequences:
+
+- **Changing it in Vercel does nothing until you redeploy.** The old value is
+  already compiled into the deployed build.
+- **A near-miss is worse than a wrong-looking one.** A deployment once shipped
+  with `https://thesis.vercel.app` when the project was actually at
+  `thesis-ten-jet.vercel.app`. That first address belongs to somebody else's
+  project, which answers every path with a 200 and an HTML page - so `og:image`
+  "worked", returned HTML instead of a picture, and WhatsApp silently showed no
+  preview card at all. The build now refuses if the value is a `.vercel.app`
+  address that is not this project's.
+
 ### Content changes never need a deploy
 
 Every admin save calls `revalidatePath` for the pages that changed, so a new
@@ -299,6 +314,11 @@ cannot parse blocks the save and shows the host what to do instead.
 
 **Changing a host's slug** (e.g. `host-one` → `amara`): edit it in
 `/admin/hosts`. Unlike episodes, host slugs are not frozen.
+
+**Social preview images** must be baseline JPEGs, not progressive ones -
+WhatsApp's fetcher does not reliably decode progressive JPEGs and just shows no
+card. `scripts/build-cover.py` writes `cover-og.jpg` baseline for that reason.
+Keep it under 300KB.
 
 **The cover art** lives in `public/brand/`. If it is replaced, regenerate the
 derived images with `python scripts/build-cover.py path/to/new-cover.jpg` and
