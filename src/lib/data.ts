@@ -320,17 +320,29 @@ export async function getLatestReplay(): Promise<LiveEvent | null> {
 /**
  * Turns a stored image path into a URL.
  *
- * A path beginning with "/" is served by the app itself out of /public. That is
- * how the seed ships branded placeholder thumbnails: seeding is plain SQL run in
- * the Supabase SQL editor, which cannot upload files, and the alternative was
- * letting the demo display thumbnails belonging to whoever made the test videos.
+ * Exactly one kind of local path is allowed: `/brand/...`, served by the app out
+ * of /public. That is how the seed ships branded placeholder thumbnails, since
+ * seeding is plain SQL run in the Supabase SQL editor and cannot upload files.
  *
- * Anything else is a key in a Supabase storage bucket, which is what every
- * upload from the admin produces.
+ * Any other absolute path is treated as invalid rather than rendered. The value
+ * comes from a database column, so an absolute path is either a typo or someone
+ * pointing the site at a file it should not be serving; returning null puts it
+ * back on the normal fallback chain and it ends up on the cover art. The `..`
+ * check keeps a value like `/brand/../../something` from escaping the folder.
+ *
+ * Anything without a leading slash is a key in a Supabase storage bucket, which
+ * is what every upload from the admin produces.
  */
+const LOCAL_IMAGE_PREFIX = '/brand/';
+
 export function storageUrl(bucket: string, path: string | null): string | null {
   if (!path) return null;
-  if (path.startsWith('/')) return path;
+
+  if (path.startsWith('/')) {
+    const isBrandAsset = path.startsWith(LOCAL_IMAGE_PREFIX) && !path.includes('..');
+    return isBrandAsset ? path : null;
+  }
+
   if (!isConfigured()) return null;
   return `${SUPABASE_URL}/storage/v1/object/public/${bucket}/${path}`;
 }

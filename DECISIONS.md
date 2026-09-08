@@ -805,10 +805,21 @@ The video URLs are unchanged, so the embeds still work when played.
 ### Seed thumbnails are local files, not storage uploads
 
 `thumbnail_path` normally holds a Supabase storage key. A path beginning with
-`/` is now served from `/public` instead. Seeding is plain SQL run in the
+`/brand/` is served from `/public` instead. Seeding is plain SQL run in the
 Supabase SQL editor, which cannot upload files, so the alternative was either an
 extra manual step during setup or leaving the borrowed thumbnails in place.
 Uploads from the admin are unaffected and still produce storage keys.
+
+**`/brand/` is the only local prefix accepted.** The value comes from a database
+column, so any other absolute path is either a typo or someone aiming the site
+at a file it should not be serving - `/api/...`, `/_next/...`, a
+protocol-relative `//host/x.jpg`, or a lookalike like `/brandx/`. All of those
+return null, which puts the image back on the normal fallback chain and it ends
+up on the cover art rather than rendering. A `..` anywhere in the path is
+refused too, so a value cannot climb out of the folder.
+
+Covered by `src/lib/data.test.ts`, and mutation-checked: loosening the rule back
+to "any leading slash" fails 11 of its 15 tests.
 
 ### Clip aspect is stored, not inferred at render time
 
