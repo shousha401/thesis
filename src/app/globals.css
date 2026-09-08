@@ -84,6 +84,51 @@ body {
   top: 1rem;
 }
 
+/*
+ * The topic marquee. Two identical runs of the topics sit side by side and the
+ * track slides by exactly half its width, so the loop is seamless. The duplicate
+ * run is aria-hidden, or a screen reader would read the topics twice.
+ *
+ * Slow on purpose: it is a texture, not a thing to read while it moves. All the
+ * text is present and legible at first paint - the animation only translates it.
+ */
+@keyframes topic-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.topic-marquee-track {
+  animation: topic-marquee 60s linear infinite;
+  will-change: transform;
+}
+
+/*
+ * The global reduced-motion rule below collapses animation-duration to 0.01ms,
+ * which for a marquee would snap it to its end position rather than stopping it.
+ * It needs switching off outright, leaving a static row.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .topic-marquee-track {
+    animation: none !important;
+    transform: none !important;
+  }
+}
+
+/*
+ * The one glowing element on the home viewport, echoing the neon script on the
+ * cover art. Display-size text only - never body copy.
+ */
+.wordmark-glow {
+  color: var(--color-magenta);
+  text-shadow:
+    0 0 18px rgb(255 61 140 / 0.45),
+    0 0 44px rgb(255 61 140 / 0.22);
+}
+
 /* Preserves the line breaks hosts type into the plain-textarea description. */
 .prose-breaks {
   white-space: pre-line;

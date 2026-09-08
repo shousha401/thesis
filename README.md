@@ -317,8 +317,12 @@ content, add it there too.
 
 | Page | Performance | Accessibility | Best practices | SEO |
 | --- | --- | --- | --- | --- |
-| Home | 99 | 100 | 100 | 100 |
+| Home | 93 | 100 | 100 | 100 |
 | Episode | 99 | 100 | 100 | 100 |
+
+The home page carries the cover art as its LCP element, which is what puts it at
+93 rather than 99. Screenshots in `docs/screens/` can be regenerated with
+`node scripts/screenshot.mjs` (see the file header).
 
 **A guide for the hosts** — how to log in and add an episode, a clip, a live
 stream, and edit a bio — is in [CLIENT_GUIDE.md](CLIENT_GUIDE.md).

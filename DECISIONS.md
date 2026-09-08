@@ -710,3 +710,77 @@ Because a silently disabled proxy would stop refreshing admin sessions without
 any visible error, the migration was verified rather than assumed: a temporary
 response header proved the proxy executes on `/admin/*` and does not execute on
 public routes (the matcher still applies). The probe was removed afterwards.
+
+---
+
+## Design pass - home hero
+
+Visual only; structure and behaviour unchanged.
+
+### The crop is expressed in percentages, never pixels
+
+`COVER_FOCUS` (`center 49%`) and `COVER_ZOOM` (`scale-[1.6]`) frame the middle
+band of the square cover - the three hosts' faces and shoulders - with the neon
+wordmark above and the desk props below out of frame. Both are unitless, so the
+higher-resolution replacement landing at the same path will be framed
+identically without anyone touching the code.
+
+`object-fit: cover` alone was not enough: it only trims the overflow, which
+still left the wordmark in shot. The zoom is what crops past it. The container
+needs `overflow-hidden` or the scaled image escapes it and bleeds over the type
+- which it did, on the first attempt.
+
+### One image element per breakpoint, but one download
+
+The desktop and mobile heroes are structurally different (absolutely positioned
+with a gradient vs. stacked in flow), so they are two elements. They initially
+had different `sizes`, which made the browser pick different srcset candidates
+and download the cover twice - a phone fetched the 44KB desktop crop it never
+displayed, on top of the 54KB one it did. Matching `sizes` on both means the
+hidden one resolves to a URL already in cache.
+
+### The marquee band is opaque
+
+The topic strip first sat directly over the photograph, where the type was
+unreadable against the busy image. It now has its own solid plum band above the
+image, which also gives the hero a defined bottom edge.
+
+The track holds the topics twice and slides by exactly half its width, so the
+loop has no seam; the duplicate run is `aria-hidden` so screen readers announce
+the topics once. Under `prefers-reduced-motion` the animation is switched off
+outright rather than being caught by the global 0.01ms rule, which would have
+snapped it to its end position instead of stopping it.
+
+### The glow is used exactly once
+
+`.wordmark-glow` puts the script line in magenta with a soft text-shadow, as on
+the cover. It is applied through a `variant="hero"` prop rather than baked into
+`Wordmark`, so the header, footer, 404 and admin keep the plain treatment and
+there is precisely one glowing element in the home viewport.
+
+### Hero height
+
+Reduced from ~700px to 555px (smaller wordmark clamp and tighter padding) so the
+"Latest Episode" eyebrow sits at y=764 in a 1440x900 viewport, inside the fold.
+
+### Lighthouse after the change (mobile, production build)
+
+| Page | Performance | Accessibility | Best practices | SEO |
+| --- | --- | --- | --- | --- |
+| Home | 93 | 100 | 100 | 100 |
+| Episode | 99 | 100 | 100 | 100 |
+
+Home performance fell from 99 to 93 and LCP from 2.0s to 3.3s. That is the
+expected price of a photographic hero: the cover is now the LCP element, as
+intended. Still comfortably above the ≥85 target, with CLS 0 and TBT 20ms. The
+source image is a low-resolution screenshot; a properly exported replacement
+will be sharper without necessarily being heavier.
+
+### Screenshots are regenerable
+
+`scripts/screenshot.mjs` captures `docs/screens/` at real device widths over the
+DevTools protocol, with no dependencies. It exists because
+`chrome --screenshot --window-size=390,844` silently lays the page out at 500px
+on Windows (Chrome will not make a window narrower than that) and crops the
+image, which looks convincingly like a horizontal-overflow bug that is not
+there. That cost some time; the note is here so it does not cost it twice.

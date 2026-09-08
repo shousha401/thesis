@@ -10,7 +10,19 @@ import { SITE_NAME } from '@/config/site';
  *
  * If a proper logo file arrives later, swap the innards of this one component.
  */
-export function Wordmark({ className = '' }: { className?: string }) {
+export function Wordmark({
+  className = '',
+  /**
+   * `hero` renders the script line in magenta with a soft glow, matching the
+   * neon on the cover art. Used once, on the home hero - it is the only glowing
+   * element in that viewport, which is what keeps it feeling like neon rather
+   * than decoration.
+   */
+  variant = 'default',
+}: {
+  className?: string;
+  variant?: 'default' | 'hero';
+}) {
   // The name is split so the two halves can be styled differently. Falls back
   // to rendering the whole name in the display face if it is ever renamed to
   // something that does not end in a single word.
@@ -24,7 +36,11 @@ export function Wordmark({ className = '' }: { className?: string }) {
   return (
     <span className={`inline-flex flex-col leading-[0.85] ${className}`}>
       {lead ? (
-        <span className="font-display italic text-cream/90 text-[0.62em] tracking-tight">
+        <span
+          className={`font-display italic text-[0.62em] tracking-tight ${
+            variant === 'hero' ? 'wordmark-glow' : 'text-cream/90'
+          }`}
+        >
           {`${lead} `}
         </span>
       ) : null}

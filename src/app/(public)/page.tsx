@@ -1,10 +1,11 @@
+import Image from 'next/image';
 import Link from 'next/link';
 import { Band, Eyebrow, Wordmark } from '@/components/brand';
 import { ClipCard } from '@/components/cards';
 import { JsonLd } from '@/components/json-ld';
 import { iconFor } from '@/components/icons';
 import { LazyVideo } from '@/components/video';
-import { PLATFORMS, SITE_NAME, TAGLINES, TOPICS } from '@/config/site';
+import { BRAND_COVER, PLATFORMS, SITE_NAME, TAGLINES, TOPICS } from '@/config/site';
 import {
   getClips,
   getCurrentOrNextLiveEvent,
@@ -230,55 +231,151 @@ export default async function HomePage() {
   );
 }
 
+/**
+ * The crop. The cover is square and the interesting band is the hosts' faces
+ * and shoulders - the wordmark sits above it and the desk props below.
+ *
+ * Expressed as a percentage rather than pixels on purpose: a higher-resolution
+ * replacement will land at the same path, and a percentage keeps framing the
+ * same part of the picture whatever its dimensions.
+ */
+const COVER_FOCUS = 'center 49%';
+
+/**
+ * object-fit: cover alone only trims the overflow, which still leaves the neon
+ * wordmark in frame. Scaling up zooms past it so the visible band is the faces
+ * and shoulders. A unitless scale, like the focus point above, survives a
+ * higher-resolution replacement unchanged.
+ */
+const COVER_ZOOM = 'scale-[1.6]';
+
+/**
+ * The same `sizes` on both hero images on purpose.
+ *
+ * They are the same file rendered twice - once for the desktop column, once
+ * stacked for mobile - and only one is visible at a time. Different `sizes`
+ * made the browser choose different srcset candidates, so a phone downloaded
+ * the desktop crop (44KB) as well as the one it actually showed. Matching them
+ * means the hidden element resolves to a URL that is already in cache.
+ */
+const COVER_SIZES = '(min-width: 1024px) 58vw, 100vw';
+
 function Hero({ hasEpisode }: { hasEpisode: boolean }) {
   return (
-    <section className="border-b border-plum-line bg-plum">
-      <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8 lg:py-28">
-        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-gold">
-          {TAGLINES.identity}
-        </p>
+    <section className="relative overflow-hidden border-b border-plum-line bg-plum">
+      {/*
+        Desktop: the art bleeds off the right edge and fills the hero, with the
+        plum gradient carrying it back under the type so nothing sits on a busy
+        background. Hidden from assistive tech here because the mobile copy
+        below carries the description.
+      */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-y-0 right-0 hidden w-[58%] overflow-hidden lg:block"
+      >
+        <Image
+          src={BRAND_COVER}
+          alt=""
+          fill
+          priority
+          sizes={COVER_SIZES}
+          className={`object-cover ${COVER_ZOOM}`}
+          style={{ objectPosition: COVER_FOCUS }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-plum via-plum/75 to-transparent" />
+      </div>
 
-        {/*
-          The logo slot. Set in type today; when a logo file lands, swap the
-          Wordmark component's internals and every instance updates.
-        */}
-        <h1 className="mt-6 text-[clamp(3rem,13vw,7.5rem)]">
-          <Wordmark />
-        </h1>
+      <div className="relative mx-auto max-w-6xl px-4 pt-12 pb-10 sm:px-6 sm:pt-16 lg:px-8 lg:pt-20 lg:pb-16">
+        <div className="lg:max-w-[52%]">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-gold">
+            {TAGLINES.identity}
+          </p>
 
-        <p className="mt-8 max-w-2xl font-display text-2xl leading-snug italic text-cream/90 sm:text-3xl">
-          {TAGLINES.primary}
-        </p>
+          {/*
+            The logo slot. Set in type today; when a logo file lands, swap the
+            Wordmark component's internals and every instance updates.
+          */}
+          <h1 className="mt-5 text-[clamp(2.75rem,9vw,5.75rem)]">
+            <Wordmark variant="hero" />
+          </h1>
 
-        <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-          {hasEpisode ? (
+          <p className="mt-6 max-w-xl font-display text-xl leading-snug italic text-cream/90 sm:text-2xl">
+            {TAGLINES.primary}
+          </p>
+
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+            {hasEpisode ? (
+              <a
+                href="#latest"
+                className="inline-flex items-center justify-center bg-magenta px-6 py-3.5 text-sm font-semibold text-ink transition-colors hover:bg-gold"
+              >
+                Watch the latest episode
+              </a>
+            ) : null}
             <a
-              href="#latest"
-              className="inline-flex items-center justify-center bg-magenta px-6 py-3.5 text-sm font-semibold text-ink transition-colors hover:bg-gold"
+              href="#listen"
+              className="inline-flex items-center justify-center border border-cream/30 px-6 py-3.5 text-sm font-semibold text-cream transition-colors hover:border-magenta hover:text-magenta"
             >
-              Watch the latest episode
+              Listen to the podcast
             </a>
-          ) : null}
-          <a
-            href="#listen"
-            className="inline-flex items-center justify-center border border-cream/30 px-6 py-3.5 text-sm font-semibold text-cream transition-colors hover:border-magenta hover:text-magenta"
-          >
-            Listen to the podcast
-          </a>
+          </div>
         </div>
 
-        <ul className="mt-12 flex flex-wrap gap-2">
-          {TOPICS.map((topic) => (
-            <li
-              key={topic}
-              className="border border-plum-line px-3.5 py-1.5 text-xs font-medium uppercase tracking-[0.12em] text-cream/70"
-            >
-              {topic}
-            </li>
-          ))}
-        </ul>
+        {/*
+          Mobile: the same crop, stacked under the buttons at full width and
+          with no gradient - there is no type over it to protect.
+        */}
+        <div className="relative mt-10 aspect-[16/10] w-full overflow-hidden lg:hidden">
+          <Image
+            src={BRAND_COVER}
+            alt={`${SITE_NAME}: the three hosts around their microphones`}
+            fill
+            priority
+            sizes={COVER_SIZES}
+            className={`object-cover ${COVER_ZOOM}`}
+            style={{ objectPosition: COVER_FOCUS }}
+          />
+        </div>
       </div>
+
+      <TopicMarquee />
     </section>
+  );
+}
+
+/**
+ * A slow horizontal run of the topics, separated by gold dots.
+ *
+ * The track holds the list twice and slides by half its width, so it loops
+ * without a seam. The second copy is aria-hidden so the topics are announced
+ * once. Under prefers-reduced-motion the animation is off and it reads as a
+ * static row (see globals.css).
+ */
+function TopicMarquee() {
+  const run = (
+    <ul className="flex shrink-0 items-center">
+      {TOPICS.map((topic) => (
+        <li key={topic} className="flex items-center whitespace-nowrap">
+          <span className="px-5 text-xs font-medium uppercase tracking-[0.2em] text-cream/75 sm:px-7 sm:text-sm">
+            {topic}
+          </span>
+          <span aria-hidden="true" className="h-1 w-1 rounded-full bg-gold" />
+        </li>
+      ))}
+    </ul>
+  );
+
+  return (
+    <div className="relative z-10 border-t border-plum-line/70 bg-plum py-3.5">
+      <div className="overflow-hidden">
+        <div className="topic-marquee-track flex w-max">
+          {run}
+          <div aria-hidden="true" className="flex">
+            {run}
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
