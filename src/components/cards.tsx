@@ -15,9 +15,16 @@ import { VideoPoster } from './video';
 export function EpisodeCard({
   episode,
   priority = false,
+  headingLevel = 3,
 }: {
   episode: Episode;
   priority?: boolean;
+  /**
+   * Cards sit under a section heading on the home page (so h3), but directly
+   * under the page title on /episodes (so h2). Skipping a level is a real
+   * accessibility failure, not a style preference.
+   */
+  headingLevel?: 2 | 3;
 }) {
   const { url, fallbackUrl } = thumbnailsFor(episode, 'card');
 
@@ -48,9 +55,12 @@ export function EpisodeCard({
             ) : null}
           </p>
 
-          <h3 className="mt-2 font-display text-2xl leading-tight text-cream transition-colors duration-200 group-hover:text-magenta">
+          <CardHeading
+            level={headingLevel}
+            className="mt-2 font-display text-2xl leading-tight text-cream transition-colors duration-200 group-hover:text-magenta"
+          >
             {episode.title}
-          </h3>
+          </CardHeading>
 
           {episode.description ? (
             <p className="mt-2 text-sm leading-relaxed text-cream/65">
@@ -63,8 +73,24 @@ export function EpisodeCard({
   );
 }
 
-export function ClipCard({ clip }: { clip: Clip }) {
+/**
+ * Clip cards are framed the way the video is, not the way the thumbnail
+ * happens to arrive.
+ *
+ * A YouTube Short only has a 16:9 thumbnail - YouTube generates nothing else -
+ * so a portrait card crops its sides with object-fit: cover. That is fine for a
+ * Short, where the subject is centred, and much better than the black
+ * letterbox bars a 16:9 image left in a 9:16 frame.
+ */
+export function ClipCard({
+  clip,
+  headingLevel = 3,
+}: {
+  clip: Clip;
+  headingLevel?: 2 | 3;
+}) {
   const { url, fallbackUrl } = thumbnailsFor(clip, 'card');
+  const isPortrait = clip.aspect === 'portrait';
 
   return (
     <article className="group">
@@ -73,18 +99,35 @@ export function ClipCard({ clip }: { clip: Clip }) {
           <VideoPoster
             thumbnailUrl={url}
             thumbnailFallbackUrl={fallbackUrl}
-            vertical
-            sizes="(min-width: 1024px) 25vw, (min-width: 640px) 40vw, 65vw"
+            vertical={isPortrait}
+            sizes="(min-width: 1024px) 25vw, (min-width: 640px) 40vw, 50vw"
           />
         </div>
 
-        <h3 className="mt-3 font-display text-lg leading-snug text-cream transition-colors duration-200 group-hover:text-magenta">
+        <CardHeading
+          level={headingLevel}
+          className="mt-3 font-display text-lg leading-snug text-cream transition-colors duration-200 group-hover:text-magenta"
+        >
           {clip.title}
-        </h3>
+        </CardHeading>
         {clip.caption ? (
           <p className="mt-1 text-sm leading-relaxed text-cream/60">{clip.caption}</p>
         ) : null}
       </Link>
     </article>
   );
+}
+
+/** Renders the right heading level so the document outline never skips one. */
+function CardHeading({
+  level,
+  className,
+  children,
+}: {
+  level: 2 | 3;
+  className: string;
+  children: React.ReactNode;
+}) {
+  const Tag = level === 2 ? 'h2' : 'h3';
+  return <Tag className={className}>{children}</Tag>;
 }

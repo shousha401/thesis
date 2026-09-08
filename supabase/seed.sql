@@ -6,8 +6,13 @@
 -- bios, platform URLs and social handles especially.
 --
 -- The video URLs are real, public, Creative Commons films (the Blender open
--- movie project) so that thumbnails and embeds genuinely work in development.
--- Replace them with real episodes.
+-- movie project) so that embeds genuinely work in development. Replace them
+-- with real episodes.
+--
+-- Their thumbnails, however, are crops of this show's own cover art rather than
+-- the films' own artwork: a demo should not display someone else's images.
+-- Generate them with `python scripts/build-placeholders.py`. A path starting
+-- with "/" is served from /public rather than from Supabase storage.
 --
 -- Safe to run more than once: each block is skipped if that table already has
 -- rows, so re-running never duplicates content.
@@ -90,7 +95,8 @@ where not exists (select 1 from public.hosts);
 
 insert into public.episodes (
   slug, episode_number, season, title, description,
-  video_url, video_provider, video_id, listen_links, published_at, is_published
+  video_url, video_provider, video_id, thumbnail_path, thumbnail_alt,
+  listen_links, published_at, is_published
 )
 select *
 from (
@@ -107,6 +113,8 @@ Placeholder description. Replace this from the admin dashboard.'::text,
     'https://www.youtube.com/watch?v=aqz-KE-bpKQ'::text,
     'youtube'::text,
     'aqz-KE-bpKQ'::text,
+    '/brand/episode-placeholder-1.jpg'::text,
+    'The three hosts around their microphones'::text,
     jsonb_build_object(
       'spotify', 'https://open.spotify.com/episode/placeholder',
       'apple',   'https://podcasts.apple.com/us/podcast/placeholder'
@@ -127,6 +135,8 @@ Placeholder description. Replace this from the admin dashboard.',
     'https://www.youtube.com/watch?v=eRsGyueVLvQ',
     'youtube',
     'eRsGyueVLvQ',
+    '/brand/episode-placeholder-2.jpg',
+    'Two of the hosts mid-conversation',
     jsonb_build_object(
       'spotify', 'https://open.spotify.com/episode/placeholder',
       'apple',   'https://podcasts.apple.com/us/podcast/placeholder'
@@ -147,6 +157,8 @@ Placeholder description. Replace this from the admin dashboard.',
     'https://www.youtube.com/watch?v=R6MlUcmOul8',
     'youtube',
     'R6MlUcmOul8',
+    '/brand/episode-placeholder-3.jpg',
+    'Two of the hosts laughing together',
     jsonb_build_object(
       'spotify', 'https://open.spotify.com/episode/placeholder',
       'apple',   'https://podcasts.apple.com/us/podcast/placeholder'
@@ -167,6 +179,8 @@ Placeholder description. Replace this from the admin dashboard.',
     'https://www.youtube.com/watch?v=TLkA0RELQ1g',
     'youtube',
     'TLkA0RELQ1g',
+    '/brand/episode-placeholder-4.jpg',
+    'A host leaning in towards the microphone',
     jsonb_build_object(
       'spotify', 'https://open.spotify.com/episode/placeholder',
       'apple',   'https://podcasts.apple.com/us/podcast/placeholder'
@@ -187,6 +201,8 @@ Placeholder description. Replace this from the admin dashboard.',
     'https://www.youtube.com/watch?v=Y-rmzh0PI3c',
     'youtube',
     'Y-rmzh0PI3c',
+    '/brand/episode-placeholder-5.jpg',
+    'The hosts under the neon studio sign',
     jsonb_build_object(
       'spotify', 'https://open.spotify.com/episode/placeholder',
       'apple',   'https://podcasts.apple.com/us/podcast/placeholder'
@@ -196,7 +212,8 @@ Placeholder description. Replace this from the admin dashboard.',
   )
 ) as v(
   slug, episode_number, season, title, description,
-  video_url, video_provider, video_id, listen_links, published_at, is_published
+  video_url, video_provider, video_id, thumbnail_path, thumbnail_alt,
+  listen_links, published_at, is_published
 )
 where not exists (select 1 from public.episodes);
 
@@ -205,10 +222,12 @@ where not exists (select 1 from public.episodes);
 
 insert into public.clips (
   slug, title, caption, video_url, video_provider, video_id,
+  thumbnail_path, thumbnail_alt, aspect,
   episode_id, published_at, is_published
 )
 select
   v.slug, v.title, v.caption, v.video_url, v.video_provider, v.video_id,
+  v.thumbnail_path, v.thumbnail_alt, v.aspect,
   (select e.id from public.episodes e where e.slug = v.episode_slug),
   v.published_at, v.is_published
 from (
@@ -219,6 +238,9 @@ from (
     'https://www.youtube.com/shorts/WhWc3b3KhnY'::text,
     'youtube'::text,
     'WhWc3b3KhnY'::text,
+    '/brand/clip-placeholder-1.jpg'::text,
+    'A host smiling in the studio'::text,
+    'portrait'::text,
     'the-audacity-of-a-first-date'::text,
     '2026-08-07 18:00:00+00'::timestamptz,
     true
@@ -230,6 +252,9 @@ from (
     'https://www.youtube.com/shorts/mN0zPOpADL4',
     'youtube',
     'mN0zPOpADL4',
+    '/brand/clip-placeholder-2.jpg',
+    'A host mid-sentence at the microphone',
+    'portrait',
     'your-group-chat-is-a-support-group',
     '2026-08-14 18:00:00+00'::timestamptz,
     true
@@ -241,12 +266,16 @@ from (
     'https://www.youtube.com/shorts/jNQXAC9IVRw',
     'youtube',
     'jNQXAC9IVRw',
+    '/brand/clip-placeholder-3.jpg',
+    'A host laughing during the recording',
+    'portrait',
     'the-only-one-in-the-room',
     '2026-08-21 18:00:00+00'::timestamptz,
     true
   )
 ) as v(
   slug, title, caption, video_url, video_provider, video_id,
+  thumbnail_path, thumbnail_alt, aspect,
   episode_slug, published_at, is_published
 )
 where not exists (select 1 from public.clips);

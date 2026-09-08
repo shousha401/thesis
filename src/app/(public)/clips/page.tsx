@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { Eyebrow } from '@/components/brand';
-import { ClipCard } from '@/components/cards';
+import { ClipGrid } from '@/components/clip-grid';
 import { SITE_NAME } from '@/config/site';
 import { getClips } from '@/lib/data';
 
@@ -29,13 +29,9 @@ export default async function ClipsPage() {
       {clips.length === 0 ? (
         <p className="mt-16 text-base text-cream/60">No clips yet.</p>
       ) : (
-        <ul className="mt-12 grid grid-cols-2 gap-5 sm:gap-6 lg:grid-cols-4">
-          {clips.map((clip) => (
-            <li key={clip.id}>
-              <ClipCard clip={clip} />
-            </li>
-          ))}
-        </ul>
+        <div className="mt-12">
+          <ClipGrid clips={clips} headingLevel={2} />
+        </div>
       )}
     </div>
   );

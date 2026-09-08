@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Band, Eyebrow } from '@/components/brand';
-import { ClipCard } from '@/components/cards';
+import { ClipGrid } from '@/components/clip-grid';
 import { ShareButtons } from '@/components/share';
 import { LazyVideo } from '@/components/video';
 import { BRAND_OG, SITE_NAME, SITE_URL } from '@/config/site';
@@ -71,6 +71,7 @@ export default async function ClipPage({
   ]);
 
   const { url: thumbnailUrl, fallbackUrl } = thumbnailsFor(clip);
+  const isPortrait = clip.aspect === 'portrait';
   const canonical = `${SITE_URL}/clips/${clip.slug}`;
   const more = allClips.filter((c) => c.slug !== clip.slug).slice(0, 4);
 
@@ -84,9 +85,18 @@ export default async function ClipPage({
           <span aria-hidden="true">←</span> All clips
         </Link>
 
-        <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,380px)_1fr] lg:gap-12">
-          {/* Vertical video, so it is capped rather than stretched across a desktop column. */}
-          <div className="mx-auto w-full max-w-[380px] border border-plum-line lg:mx-0">
+        <div
+          className={`mt-8 grid gap-8 lg:gap-12 ${
+            isPortrait ? 'lg:grid-cols-[minmax(0,380px)_1fr]' : 'lg:grid-cols-[1.4fr_1fr]'
+          }`}
+        >
+          {/* A vertical video is capped rather than stretched across a desktop
+              column; a landscape one is free to fill it. */}
+          <div
+            className={`w-full border border-plum-line ${
+              isPortrait ? 'mx-auto max-w-[380px] lg:mx-0' : ''
+            }`}
+          >
             <LazyVideo
               embedUrl={embedUrlFor(clip)}
               title={clip.title}
@@ -151,13 +161,9 @@ export default async function ClipPage({
             <h2 id="more-clips" className="mt-3 font-display text-3xl text-cream">
               More clips
             </h2>
-            <ul className="mt-8 grid grid-cols-2 gap-5 sm:gap-6 lg:grid-cols-4">
-              {more.map((c) => (
-                <li key={c.id}>
-                  <ClipCard clip={c} />
-                </li>
-              ))}
-            </ul>
+            <div className="mt-8">
+              <ClipGrid clips={more} />
+            </div>
           </section>
         </>
       ) : null}

@@ -219,7 +219,7 @@ export async function getSeasons(): Promise<number[]> {
 // --- Clips -----------------------------------------------------------------
 
 const CLIP_FIELDS =
-  'id, slug, title, caption, video_url, video_provider, video_id, thumbnail_path, thumbnail_alt, episode_id, published_at, is_published' as const;
+  'id, slug, title, caption, video_url, video_provider, video_id, thumbnail_path, thumbnail_alt, episode_id, aspect, published_at, is_published' as const;
 
 export async function getClips(options?: { limit?: number }): Promise<Clip[]> {
   if (fixtureMode()) {
@@ -317,9 +317,20 @@ export async function getLatestReplay(): Promise<LiveEvent | null> {
 
 // --- Storage ---------------------------------------------------------------
 
-/** Turns a stored bucket-relative path into a public CDN URL. */
+/**
+ * Turns a stored image path into a URL.
+ *
+ * A path beginning with "/" is served by the app itself out of /public. That is
+ * how the seed ships branded placeholder thumbnails: seeding is plain SQL run in
+ * the Supabase SQL editor, which cannot upload files, and the alternative was
+ * letting the demo display thumbnails belonging to whoever made the test videos.
+ *
+ * Anything else is a key in a Supabase storage bucket, which is what every
+ * upload from the admin produces.
+ */
 export function storageUrl(bucket: string, path: string | null): string | null {
   if (!path) return null;
+  if (path.startsWith('/')) return path;
   if (!isConfigured()) return null;
   return `${SUPABASE_URL}/storage/v1/object/public/${bucket}/${path}`;
 }

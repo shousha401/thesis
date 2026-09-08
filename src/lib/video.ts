@@ -33,6 +33,13 @@ export interface ParsedVideo {
   thumbnailFallbackUrl: string | null;
   /** The input with tracking parameters and timestamps stripped. Store this, not the raw paste. */
   canonicalUrl: string;
+  /**
+   * True when the source was a vertical format: a YouTube /shorts/ link, or any
+   * Instagram or TikTok video. Callers use it to pick a 9:16 frame instead of
+   * 16:9. It is about the URL, not the file - YouTube still only serves a 16:9
+   * thumbnail for a Short, which the card crops.
+   */
+  isVertical: boolean;
 }
 
 export type ParseVideoResult =
@@ -97,6 +104,7 @@ const YOUTUBE_HOSTS = new Set([
 function parseYouTube(url: URL): ParseVideoResult {
   const segments = pathSegments(url);
   const host = bareHost(url);
+  const isShorts = segments[0] === 'shorts';
   let id: string | null = null;
 
   if (host === 'youtu.be') {
@@ -138,7 +146,12 @@ function parseYouTube(url: URL): ParseVideoResult {
     embedUrl: `https://www.youtube-nocookie.com/embed/${id}`,
     thumbnailUrl: `https://i.ytimg.com/vi/${id}/maxresdefault.jpg`,
     thumbnailFallbackUrl: `https://i.ytimg.com/vi/${id}/hqdefault.jpg`,
-    canonicalUrl: `https://www.youtube.com/watch?v=${id}`,
+    // Shorts keep their /shorts/ form: it is the canonical page for a vertical
+    // video, and it is what tells us later how to frame the card.
+    canonicalUrl: isShorts
+      ? `https://www.youtube.com/shorts/${id}`
+      : `https://www.youtube.com/watch?v=${id}`,
+    isVertical: isShorts,
   });
 }
 
@@ -185,6 +198,7 @@ function parseInstagram(url: URL): ParseVideoResult {
     thumbnailUrl: null,
     thumbnailFallbackUrl: null,
     canonicalUrl: `https://www.instagram.com/${normalizedKind}/${code}/`,
+    isVertical: true,
   });
 }
 
@@ -228,6 +242,7 @@ function parseTikTok(url: URL): ParseVideoResult {
     canonicalUrl: handle
       ? `https://www.tiktok.com/${handle}/video/${id}`
       : `https://www.tiktok.com/embed/v2/${id}`,
+    isVertical: true,
   });
 }
 

@@ -78,7 +78,7 @@ export default async function EpisodesPage({
         <ul className="mt-12 grid gap-10 sm:grid-cols-2 sm:gap-8 lg:grid-cols-3">
           {episodes.map((episode, index) => (
             <li key={episode.id}>
-              <EpisodeCard episode={episode} priority={index < 3} />
+              <EpisodeCard episode={episode} priority={index < 3} headingLevel={2} />
             </li>
           ))}
         </ul>

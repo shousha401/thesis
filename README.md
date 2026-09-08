@@ -300,8 +300,11 @@ cannot parse blocks the save and shows the host what to do instead.
 **Changing a host's slug** (e.g. `host-one` → `amara`): edit it in
 `/admin/hosts`. Unlike episodes, host slugs are not frozen.
 
-**The cover art** lives in `public/brand/`. If it is replaced, regenerate both
-sizes with `python scripts/build-cover.py path/to/new-cover.jpg` (needs Pillow).
+**The cover art** lives in `public/brand/`. If it is replaced, regenerate the
+derived images with `python scripts/build-cover.py path/to/new-cover.jpg` and
+`python scripts/build-placeholders.py` (both need Pillow). The second one makes
+the branded thumbnails the seed content uses, so a demo never displays the test
+videos' own artwork.
 
 **SEO plumbing** is generated, not hand-maintained: `src/app/sitemap.ts` lists
 every published episode, clip and host (and is refreshed whenever content
@@ -317,7 +320,9 @@ content, add it there too.
 
 | Page | Performance | Accessibility | Best practices | SEO |
 | --- | --- | --- | --- | --- |
-| Home | 93 | 100 | 100 | 100 |
+| Home | 92 | 100 | 100 | 100 |
+| Clips | 95 | 100 | 100 | 100 |
+| Episodes | 96 | 100 | 100 | 100 |
 | Episode | 99 | 100 | 100 | 100 |
 
 The home page carries the cover art as its LCP element, which is what puts it at

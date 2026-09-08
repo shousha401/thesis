@@ -3,7 +3,7 @@
 import { revalidateClip } from '@/lib/admin/revalidate';
 import { redirect } from 'next/navigation';
 import { requireAdmin } from '@/lib/admin/auth';
-import { applyPendingUpload, validateMedia } from '@/lib/admin/media';
+import { applyPendingUpload, deriveAspect, validateMedia } from '@/lib/admin/media';
 import { createAdminClient } from '@/lib/supabase/server';
 
 /**
@@ -31,6 +31,7 @@ function echo(formData: FormData): Record<string, string> {
     'published_at',
     'thumbnail_alt',
     'episode_id',
+    'aspect',
   ]) {
     values[key] = text(formData, key);
   }
@@ -101,6 +102,14 @@ async function validate(
 
   const episodeId = text(formData, 'episode_id');
 
+  // Derived from the link (and from an uploaded image, if there is one), unless
+  // the host has picked a shape explicitly.
+  const chosenAspect = text(formData, 'aspect');
+  const aspect =
+    chosenAspect === 'portrait' || chosenAspect === 'landscape'
+      ? chosenAspect
+      : deriveAspect(uploaded.fields);
+
   return {
     ok: true,
     row: {
@@ -112,6 +121,7 @@ async function validate(
       thumbnail_path: uploaded.fields.thumbnailPath,
       thumbnail_alt: uploaded.fields.thumbnailAlt,
       episode_id: episodeId === '' ? null : episodeId,
+      aspect,
       published_at: publishedAt,
       is_published: isPublished,
     },

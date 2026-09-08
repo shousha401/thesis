@@ -35,6 +35,8 @@ export interface Episode {
   is_published: boolean;
 }
 
+export type ClipAspect = 'portrait' | 'landscape';
+
 export interface Clip {
   id: string;
   slug: string;
@@ -46,6 +48,8 @@ export interface Clip {
   thumbnail_path: string | null;
   thumbnail_alt: string | null;
   episode_id: string | null;
+  /** How the card frames the thumbnail. Derived on save, overridable in admin. */
+  aspect: ClipAspect;
   published_at: string | null;
   is_published: boolean;
 }

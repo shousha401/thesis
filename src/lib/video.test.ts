@@ -62,15 +62,29 @@ describe('parseVideoUrl / YouTube', () => {
     expect(video.embedUrl).not.toContain('autoplay');
   });
 
-  it('canonicalises every form to the same stored URL', () => {
+  it('canonicalises the landscape forms to the same stored URL', () => {
     const forms = [
       `https://youtu.be/${YT_ID}?t=42&si=track`,
-      `https://www.youtube.com/shorts/${YT_ID}`,
       `https://m.youtube.com/watch?v=${YT_ID}&list=PL1`,
+      `https://www.youtube.com/embed/${YT_ID}`,
     ];
     for (const form of forms) {
       expect(parsed(form).canonicalUrl).toBe(`https://www.youtube.com/watch?v=${YT_ID}`);
     }
+  });
+
+  // A Short keeps its /shorts/ form. It is the canonical page for a vertical
+  // video, and it is what tells the card to use a 9:16 frame later.
+  it('keeps a Short in its /shorts/ form', () => {
+    const video = parsed(`https://www.youtube.com/shorts/${YT_ID}?feature=share`);
+    expect(video.canonicalUrl).toBe(`https://www.youtube.com/shorts/${YT_ID}`);
+    expect(video.isVertical).toBe(true);
+  });
+
+  it('marks ordinary YouTube videos as landscape', () => {
+    expect(parsed(`https://www.youtube.com/watch?v=${YT_ID}`).isVertical).toBe(false);
+    expect(parsed(`https://youtu.be/${YT_ID}`).isVertical).toBe(false);
+    expect(parsed(`https://www.youtube.com/live/${YT_ID}`).isVertical).toBe(false);
   });
 
   it('offers a thumbnail and a fallback, because maxres does not always exist', () => {
@@ -130,6 +144,11 @@ describe('parseVideoUrl / Instagram', () => {
     expect(video.thumbnailFallbackUrl).toBeNull();
   });
 
+  it('is always vertical', () => {
+    expect(parsed(`https://www.instagram.com/reel/${CODE}/`).isVertical).toBe(true);
+    expect(parsed(`https://www.instagram.com/p/${CODE}/`).isVertical).toBe(true);
+  });
+
   it.each([
     ['a profile', 'https://www.instagram.com/shesgotathesis/'],
     ['the audio browsing page', 'https://www.instagram.com/reels/audio/12345/'],
@@ -152,6 +171,10 @@ describe('parseVideoUrl / TikTok', () => {
     expect(video.provider).toBe('tiktok');
     expect(video.id).toBe(ID);
     expect(video.embedUrl).toBe(`https://www.tiktok.com/embed/v2/${ID}`);
+  });
+
+  it('is always vertical', () => {
+    expect(parsed(`https://www.tiktok.com/@u/video/${ID}`).isVertical).toBe(true);
   });
 
   it('keeps the @handle in the canonical URL', () => {
@@ -249,6 +272,7 @@ describe('parseVideoUrl / result shape', () => {
       'canonicalUrl',
       'embedUrl',
       'id',
+      'isVertical',
       'provider',
       'thumbnailFallbackUrl',
       'thumbnailUrl',

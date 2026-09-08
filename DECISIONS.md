@@ -784,3 +784,84 @@ DevTools protocol, with no dependencies. It exists because
 on Windows (Chrome will not make a window narrower than that) and crops the
 image, which looks convincingly like a horizontal-overflow bug that is not
 there. That cost some time; the note is here so it does not cost it twice.
+
+---
+
+## Clip fixes before the demo
+
+### Seed content shows only this show's own artwork
+
+The seed videos are real Creative Commons films, and the site was fetching their
+YouTube thumbnails - so a demo displayed someone else's images. Every seeded
+episode and clip now carries a crop of the show's own cover instead, generated
+by `python scripts/build-placeholders.py`: three 9:16 crops for the clips (one
+per host) and five 16:9 crops for the episodes.
+
+Verified: zero references to `i.ytimg.com` in the rendered HTML of `/`,
+`/clips`, `/episodes` and both detail pages.
+
+The video URLs are unchanged, so the embeds still work when played.
+
+### Seed thumbnails are local files, not storage uploads
+
+`thumbnail_path` normally holds a Supabase storage key. A path beginning with
+`/` is now served from `/public` instead. Seeding is plain SQL run in the
+Supabase SQL editor, which cannot upload files, so the alternative was either an
+extra manual step during setup or leaving the borrowed thumbnails in place.
+Uploads from the admin are unaffected and still produce storage keys.
+
+### Clip aspect is stored, not inferred at render time
+
+New `clips.aspect` column (`portrait` | `landscape`), derived on save and
+editable in the admin. Deriving it at render would mean re-parsing the video URL
+on every request, and would still be wrong for an uploaded thumbnail.
+
+The rules, in order: an uploaded image's own orientation wins, because it is the
+picture the hosts deliberately chose; otherwise Instagram, TikTok and YouTube
+`/shorts/` links are portrait and everything else is landscape.
+
+`parseVideoUrl` gained `isVertical` to support this, and a Short now
+canonicalises to its `/shorts/` form rather than `watch?v=` - the URL is what
+records that the video is vertical. Two existing tests failed on that change,
+which is what they were for; both were updated deliberately.
+
+Reading an uploaded image's dimensions is done by parsing the JPEG/PNG/GIF/WebP
+header directly rather than adding an image library for one number. It is
+covered by tests against the real brand images, including a truncated file.
+
+### A Short's card crops rather than letterboxes
+
+YouTube only ever generates a 16:9 thumbnail, even for a Short. Rendering that
+in a 9:16 frame produced black bars down both sides. The card now uses
+`object-fit: cover`, cropping the sides - acceptable for a Short, where the
+subject is centred, and much better than the bars.
+
+### The grid packs densely
+
+`grid-flow-row-dense` with portrait cards spanning two rows, so two landscape
+cards stack beside one portrait card instead of every row being as tall as its
+tallest member. Every card still reserves its space with an aspect-ratio box, so
+nothing reflows as thumbnails load.
+
+All three seeded clips are portrait, so the mixed case was verified separately
+by inserting two temporary landscape clips (screenshots in
+`docs/screens/clips-mixed-*.png`) and then removing them.
+
+### A heading-order bug this uncovered
+
+Running Lighthouse on `/clips` for the first time - previous runs only covered
+the home and episode pages - showed accessibility at 98: the page went from `h1`
+straight to `h3`, because the card heading was fixed at `h3` for the home page
+where it sits under a section heading. `/episodes` had the same flaw.
+
+Cards now take a `headingLevel`, so the outline never skips a level. Both pages
+are back to 100. The lesson: audit every page type, not a representative one.
+
+### Lighthouse after these changes (mobile, production build)
+
+| Page | Performance | Accessibility | Best practices | SEO |
+| --- | --- | --- | --- | --- |
+| Home | 92 | 100 | 100 | 100 |
+| Clips | 95 | 100 | 100 | 100 |
+| Episodes | 96 | 100 | 100 | 100 |
+| Episode | 99 | 100 | 100 | 100 |

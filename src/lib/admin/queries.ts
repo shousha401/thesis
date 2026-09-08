@@ -63,7 +63,7 @@ export async function nextEpisodeNumber(): Promise<number> {
 // --- clips ---------------------------------------------------------------
 
 const CLIP_FIELDS =
-  'id, slug, title, caption, video_url, video_provider, video_id, thumbnail_path, thumbnail_alt, episode_id, published_at, is_published, deleted_at' as const;
+  'id, slug, title, caption, video_url, video_provider, video_id, thumbnail_path, thumbnail_alt, episode_id, aspect, published_at, is_published, deleted_at' as const;
 
 export interface AdminClip extends Clip {
   deleted_at: string | null;

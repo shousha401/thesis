@@ -92,6 +92,18 @@ export function ClipForm({
       </Field>
 
       <Field
+        label="Card shape"
+        htmlFor="aspect"
+        hint="Worked out from the link when you save. Change it if the card looks wrong."
+      >
+        <Select id="aspect" name="aspect" defaultValue={value('aspect', clip?.aspect)}>
+          <option value="">Work it out for me</option>
+          <option value="portrait">Tall (Shorts, Reels, TikTok)</option>
+          <option value="landscape">Wide (normal YouTube video)</option>
+        </Select>
+      </Field>
+
+      <Field
         label="Publish date"
         htmlFor="published_at"
         hint="Leave blank and today's date is used when you publish."

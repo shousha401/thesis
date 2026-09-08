@@ -19,6 +19,84 @@ export interface MediaFields {
   canonicalUrl: string;
   thumbnailPath: string | null;
   thumbnailAlt: string | null;
+  /** True for a Short, Reel or TikTok - used to pick a 9:16 card. */
+  isVertical: boolean;
+  /**
+   * Portrait/landscape of an uploaded thumbnail, when one was uploaded and its
+   * dimensions could be read. Overrides the URL's own orientation, because the
+   * picture the hosts chose is the one that gets framed.
+   */
+  uploadedIsPortrait: boolean | null;
+}
+
+/**
+ * Reads width and height straight out of an image header.
+ *
+ * Only enough of each format to get the dimensions - a full decoder would be a
+ * dependency for one number. Returns null for anything it does not recognise,
+ * and the caller falls back to the URL's orientation.
+ */
+export function imageDimensions(
+  buffer: Buffer,
+): { width: number; height: number } | null {
+  // PNG: IHDR is always the first chunk.
+  if (buffer.length > 24 && buffer.toString('ascii', 1, 4) === 'PNG') {
+    return { width: buffer.readUInt32BE(16), height: buffer.readUInt32BE(20) };
+  }
+
+  // GIF
+  if (buffer.length > 10 && buffer.toString('ascii', 0, 3) === 'GIF') {
+    return { width: buffer.readUInt16LE(6), height: buffer.readUInt16LE(8) };
+  }
+
+  // WebP (VP8X / VP8 / VP8L)
+  if (
+    buffer.length > 30 &&
+    buffer.toString('ascii', 0, 4) === 'RIFF' &&
+    buffer.toString('ascii', 8, 12) === 'WEBP'
+  ) {
+    const format = buffer.toString('ascii', 12, 16);
+    if (format === 'VP8X') {
+      return {
+        width: 1 + (buffer.readUIntLE(24, 3) & 0xffffff),
+        height: 1 + (buffer.readUIntLE(27, 3) & 0xffffff),
+      };
+    }
+    if (format === 'VP8 ') {
+      return {
+        width: buffer.readUInt16LE(26) & 0x3fff,
+        height: buffer.readUInt16LE(28) & 0x3fff,
+      };
+    }
+  }
+
+  // JPEG: walk the segments to the start-of-frame marker.
+  if (buffer.length > 4 && buffer[0] === 0xff && buffer[1] === 0xd8) {
+    let offset = 2;
+    while (offset + 9 < buffer.length) {
+      if (buffer[offset] !== 0xff) {
+        offset++;
+        continue;
+      }
+      const marker = buffer[offset + 1];
+      // SOF0-SOF3, SOF5-SOF7, SOF9-SOF11, SOF13-SOF15 carry the dimensions.
+      if (
+        marker >= 0xc0 &&
+        marker <= 0xcf &&
+        marker !== 0xc4 &&
+        marker !== 0xc8 &&
+        marker !== 0xcc
+      ) {
+        return {
+          height: buffer.readUInt16BE(offset + 5),
+          width: buffer.readUInt16BE(offset + 7),
+        };
+      }
+      offset += 2 + buffer.readUInt16BE(offset + 2);
+    }
+  }
+
+  return null;
 }
 
 /**
@@ -88,6 +166,7 @@ export async function validateMedia(
   let provider = '';
   let videoId = '';
   let canonicalUrl = '';
+  let isVertical = false;
 
   if (!videoUrlRaw) {
     fieldErrors.video_url = 'Paste the link to the video.';
@@ -101,6 +180,7 @@ export async function validateMedia(
       provider = result.video.provider;
       videoId = result.video.id;
       canonicalUrl = result.video.canonicalUrl;
+      isVertical = result.video.isVertical;
     }
   }
 
@@ -137,6 +217,12 @@ export async function validateMedia(
 
   if (Object.keys(fieldErrors).length > 0) return { ok: false, fieldErrors };
 
+  let uploadedIsPortrait: boolean | null = null;
+  if (hasNewFile) {
+    const dimensions = imageDimensions(Buffer.from(await file.arrayBuffer()));
+    if (dimensions) uploadedIsPortrait = dimensions.height > dimensions.width;
+  }
+
   return {
     ok: true,
     pendingUpload: hasNewFile ? file : null,
@@ -146,8 +232,21 @@ export async function validateMedia(
       canonicalUrl,
       thumbnailPath,
       thumbnailAlt: thumbnailPath ? thumbnailAlt : null,
+      isVertical,
+      uploadedIsPortrait,
     },
   };
+}
+
+/**
+ * The card shape for a clip: what the uploaded image says if there is one,
+ * otherwise what the URL implies.
+ */
+export function deriveAspect(fields: MediaFields): 'portrait' | 'landscape' {
+  if (fields.uploadedIsPortrait !== null) {
+    return fields.uploadedIsPortrait ? 'portrait' : 'landscape';
+  }
+  return fields.isVertical ? 'portrait' : 'landscape';
 }
 
 /** Runs the deferred upload and folds the result into the media fields. */

@@ -1,7 +1,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { Band, Eyebrow, Wordmark } from '@/components/brand';
-import { ClipCard } from '@/components/cards';
+import { ClipGrid } from '@/components/clip-grid';
 import { JsonLd } from '@/components/json-ld';
 import { iconFor } from '@/components/icons';
 import { LazyVideo } from '@/components/video';
@@ -124,13 +124,9 @@ export default async function HomePage() {
             </Link>
           </div>
 
-          <ul className="mt-8 grid grid-cols-2 gap-5 sm:gap-6 lg:grid-cols-4">
-            {clips.map((clip) => (
-              <li key={clip.id}>
-                <ClipCard clip={clip} />
-              </li>
-            ))}
-          </ul>
+          <div className="mt-8">
+            <ClipGrid clips={clips} />
+          </div>
         </section>
       ) : null}
 

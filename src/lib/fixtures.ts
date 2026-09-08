@@ -79,6 +79,15 @@ export const FIXTURE_HOSTS: Host[] = [
   },
 ];
 
+/** Matches supabase/seed.sql. Crops of the cover, not the test films' artwork. */
+const EPISODE_THUMB_ALT: Record<number, string> = {
+  1: 'The three hosts around their microphones',
+  2: 'Two of the hosts mid-conversation',
+  3: 'Two of the hosts laughing together',
+  4: 'A host leaning in towards the microphone',
+  5: 'The hosts under the neon studio sign',
+};
+
 function episode(
   n: number,
   slug: string,
@@ -97,8 +106,8 @@ function episode(
     video_url: `https://www.youtube.com/watch?v=${videoId}`,
     video_provider: 'youtube',
     video_id: videoId,
-    thumbnail_path: null,
-    thumbnail_alt: null,
+    thumbnail_path: `/brand/episode-placeholder-${n}.jpg`,
+    thumbnail_alt: EPISODE_THUMB_ALT[n],
     listen_links: {
       spotify: 'https://open.spotify.com/episode/placeholder',
       apple: 'https://podcasts.apple.com/us/podcast/placeholder',
@@ -180,8 +189,9 @@ export const FIXTURE_CLIPS: Clip[] = [
     video_url: 'https://www.youtube.com/shorts/jNQXAC9IVRw',
     video_provider: 'youtube',
     video_id: 'jNQXAC9IVRw',
-    thumbnail_path: null,
-    thumbnail_alt: null,
+    thumbnail_path: '/brand/clip-placeholder-3.jpg',
+    thumbnail_alt: 'A host laughing during the recording',
+    aspect: 'portrait',
     episode_id: 'episode-3',
     published_at: '2026-08-21T18:00:00.000Z',
     is_published: true,
@@ -194,8 +204,9 @@ export const FIXTURE_CLIPS: Clip[] = [
     video_url: 'https://www.youtube.com/shorts/mN0zPOpADL4',
     video_provider: 'youtube',
     video_id: 'mN0zPOpADL4',
-    thumbnail_path: null,
-    thumbnail_alt: null,
+    thumbnail_path: '/brand/clip-placeholder-2.jpg',
+    thumbnail_alt: 'A host mid-sentence at the microphone',
+    aspect: 'portrait',
     episode_id: 'episode-2',
     published_at: '2026-08-14T18:00:00.000Z',
     is_published: true,
@@ -208,8 +219,9 @@ export const FIXTURE_CLIPS: Clip[] = [
     video_url: 'https://www.youtube.com/shorts/WhWc3b3KhnY',
     video_provider: 'youtube',
     video_id: 'WhWc3b3KhnY',
-    thumbnail_path: null,
-    thumbnail_alt: null,
+    thumbnail_path: '/brand/clip-placeholder-1.jpg',
+    thumbnail_alt: 'A host smiling in the studio',
+    aspect: 'portrait',
     episode_id: 'episode-1',
     published_at: '2026-08-07T18:00:00.000Z',
     is_published: true,
